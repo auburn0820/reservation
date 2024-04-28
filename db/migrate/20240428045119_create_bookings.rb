@@ -4,7 +4,7 @@ class CreateBookings < ActiveRecord::Migration[7.1]
       t.string :booking_id, null: false
       t.string :user_id, null: false
       t.string :exam_id, null: false
-      t.boolean :confirmed, null: false, default: false
+      t.string :status, null: false
       t.timestamps
     end
 

@@ -1,15 +1,21 @@
 class Booking < ApplicationRecord
-  before_create :set_booking_id, :set_confirmed
+  before_create :set_booking_id, :set_status
+
+  enum status: { pending: "pending", confirmed: "confirmed", canceled: "canceled" }
 
   def confirm
-    self.update_attribute(:confirmed, true)
+    self.update_attribute(:status, "confirmed")
+  end
+
+  def cancel
+    self.update_attribute(:status, "canceled")
   end
 
   def set_booking_id
     self.booking_id = SecureRandom.uuid
   end
 
-  def set_confirmed
-    self.confirmed = false
+  def set_status
+    self.status = "pending"
   end
 end

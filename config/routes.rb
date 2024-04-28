@@ -11,7 +11,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :bookings, only: [:index, :show, :create] do
+      resources :bookings, only: [:index, :show, :create, :destroy] do
         put 'confirm', to: 'bookings#confirm', on: :member
       end
     end

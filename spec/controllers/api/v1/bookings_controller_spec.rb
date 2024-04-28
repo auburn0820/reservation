@@ -108,7 +108,7 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
       end
 
       it '예약을 확정한다' do
-        expect(booking.reload.confirmed).to eq(true)
+        expect(booking.reload.status).to eq("confirmed")
       end
 
       it '성공 응답 반환' do
@@ -123,11 +123,58 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
       end
 
       it '예약 확정을 할 수 없다' do
-        expect(booking.reload.confirmed).to eq(false)
+        expect(booking.reload.status).to eq("pending")
       end
 
       it '권한 없음 상태를 반환' do
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  describe 'DELETE #destroy' do
+    context '사용자가 관리자일 때' do
+      let(:booking) { create(:booking, user_id: admin.user_id, exam_id: exam.exam_id, status: "confirmed") }
+
+      before do
+        allow(controller).to receive(:current_user).and_return(admin)
+      end
+
+      it '예약을 취소한다' do
+        delete :destroy, params: { id: booking.booking_id }
+        booking.reload
+        expect(booking.status).to eq('canceled')
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context '예약을 한 사용자일 때' do
+      before do
+        allow(controller).to receive(:current_user).and_return(user)
+      end
+
+      context '확정이 되지 않은 예약일 때' do
+        let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id, status: "pending") }
+        it '취소할 수 있다' do
+          delete :destroy, params: { id: booking.booking_id }
+          booking.reload
+          expect(booking.status).to eq('canceled')
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context '확정된 예약일 때' do
+        let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id, status: "confirmed") }
+        before do
+          booking.update(status: 'confirmed')
+        end
+
+        it '취소할 수 없다' do
+          delete :destroy, params: { id: booking.booking_id }
+          booking.reload
+          expect(booking.status).to eq('confirmed')
+          expect(response).to have_http_status(:bad_request)
+        end
       end
     end
   end

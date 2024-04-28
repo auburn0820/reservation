@@ -15,7 +15,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_04_28_073138) do
     t.string "booking_id", null: false
     t.string "user_id", null: false
     t.string "exam_id", null: false
-    t.boolean "confirmed", default: false, null: false
+    t.string "status", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["booking_id"], name: "index_bookings_on_booking_id", unique: true
