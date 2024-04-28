@@ -10,14 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_04_28_045119) do
+ActiveRecord::Schema[7.1].define(version: 2024_04_28_073138) do
   create_table "bookings", force: :cascade do |t|
     t.string "booking_id", null: false
     t.string "user_id", null: false
+    t.string "exam_id", null: false
+    t.boolean "confirmed", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["booking_id"], name: "index_bookings_on_booking_id", unique: true
+    t.index ["exam_id"], name: "index_bookings_on_exam_id"
     t.index ["user_id"], name: "index_bookings_on_user_id"
+  end
+
+  create_table "exams", force: :cascade do |t|
+    t.string "exam_id", null: false
+    t.string "name", null: false
+    t.datetime "started_at", null: false
+    t.datetime "ended_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["exam_id"], name: "index_exams_on_exam_id", unique: true
   end
 
   create_table "users", force: :cascade do |t|
