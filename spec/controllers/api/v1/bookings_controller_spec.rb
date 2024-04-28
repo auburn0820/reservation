@@ -65,7 +65,7 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
     context '예약할 수 있는 상황이면' do
 
       before do
-        allow(controller).to receive(:check_availability).and_return(true)
+        allow(controller).to receive(:can_book_exam?).and_return(true)
         post :create, params: { booking: { exam_id: exam.exam_id } }
       end
 
@@ -84,8 +84,8 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
 
     context '예약을 할 수 없는 상황이면' do
       before do
-        allow(controller).to receive(:check_availability).and_return(false)
-        post :create
+        allow(controller).to receive(:can_book_exam?).and_return(false)
+        post :create, params: { booking: { exam_id: exam.exam_id } }
       end
 
       it '새로운 예약은 생성하지 않음' do

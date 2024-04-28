@@ -2,16 +2,11 @@
 
 class Api::V1::BookingsController < ApplicationController
   before_action :set_booking, only: [:show, :destroy, :confirm]
-  before_action :check_availability, only: [:create]
+  before_action :check_exam_availability, only: [:create]
 
   def index
-    bookings = if current_user.admin?
-                 Booking.all
-               else
-                 Booking.where(user_id: current_user.user_id)
-               end
-
-    @bookings = bookings.page(params[:page]).per(params[:per_page])
+    @bookings = current_user.admin? ? Booking.all : Booking.where(user_id: current_user.user_id)
+    @bookings = @bookings.page(params[:page]).per(params[:per_page])
 
     render_json_response(data: @bookings)
   end
@@ -21,63 +16,52 @@ class Api::V1::BookingsController < ApplicationController
   end
 
   def create
-    if check_availability
-      @booking = Booking.new(booking_params.merge(user_id: current_user.user_id))
+    @booking = Booking.build(booking_params.merge(user_id: current_user.user_id))
 
-      if @booking.save
-        render_json_response(data: @booking)
-      else
-        render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
-      end
-    else
-      render_json_response(message: 'Booking limit reached for this time slot', status: 422)
-    end
-  end
-
-  def destroy
-    if current_user.admin?
-      cancel_booking
-    elsif @booking.user_id == current_user.user_id
-      if @booking.status == "confirmed"
-        render_json_response(message: "Confirmed booking cannot cancel.", status: 400)
-      else
-        cancel_booking
-      end
-    else
-      render_json_response(message: "Only the person who made the booking can cancel it.", status: 400)
-    end
-  end
-
-  def confirm # TODO: Refactor
-    if current_user.admin?
-      @booking = Booking.find_by(booking_id: params[:id])
-
-      if @booking&.confirm
-        render_json_response(data: @booking)
-      else
-        render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
-      end
-    else
-      render_json_response(message: 'Only admin confirm booking.', status: 401)
-    end
-  end
-
-  private
-
-  def set_booking
-    @booking = current_user.admin? ? Booking.find_by(booking_id: params[:id]) : Booking.find_by(booking_id: params[:id], user_id: current_user.user_id)
-  end
-
-  def cancel_booking
-    if @booking&.cancel
+    if @booking.save
       render_json_response(data: @booking)
     else
       render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
     end
   end
 
-  def check_availability
-    Booking.where(booked_at: params[:exam_id], status: "confirmed").count < 50_000
+  def destroy
+    return render_json_response(message: "Only the person who made the booking can cancel it.", status: 400) unless authorized_to_cancel?
+
+    if @booking.cancel
+      render_json_response(data: @booking)
+    else
+      render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
+    end
+  end
+
+  def confirm
+    return render_json_response(message: 'Only admin can confirm bookings.', status: 401) unless current_user.admin?
+
+    if @booking.confirm
+      render_json_response(data: @booking)
+    else
+      render_json_response(message: 'Unable to confirm booking.', status: 422)
+    end
+  end
+
+  private
+
+  def set_booking
+    @booking = Booking.find_by(booking_id: params[:id])
+    render_json_response(message: 'Booking not found.', status: 404) unless @booking
+  end
+
+  def authorized_to_cancel?
+    current_user.admin? || @booking.user_id == current_user.user_id && @booking.status != "confirmed"
+  end
+
+  def check_exam_availability
+    render_json_response(message: "Can't booking.", status: 422) unless can_book_exam?
+  end
+
+  def can_book_exam?
+    Booking.where(exam_id: booking_params[:exam_id], status: "confirmed").count < Constants::BOOKING_LIMIT_COUNT
   end
 
   def booking_params
