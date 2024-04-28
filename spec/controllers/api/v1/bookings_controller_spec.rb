@@ -98,7 +98,7 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
     end
   end
 
-  describe 'PUT confirm' do
+  describe '#confirm' do
     let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id) }
 
     context '사용자가 관리자일 때' do
@@ -132,7 +132,7 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
     end
   end
 
-  describe 'DELETE #destroy' do
+  describe '#destroy' do
     context '사용자가 관리자일 때' do
       let(:booking) { create(:booking, user_id: admin.user_id, exam_id: exam.exam_id, status: "confirmed") }
 
