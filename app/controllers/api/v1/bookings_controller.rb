@@ -34,6 +34,20 @@ class Api::V1::BookingsController < ApplicationController
     end
   end
 
+  def confirm
+    if current_user.admin?
+      @booking = Booking.find_by(booking_id: params[:id])
+
+      if @booking&.confirm
+        render_json_response(data: @booking)
+      else
+        render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
+      end
+    else
+      render_json_response(message: 'Only admin confirm booking.', status: 401)
+    end
+  end
+
   private
 
   def set_booking
