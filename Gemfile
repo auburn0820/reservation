@@ -12,6 +12,8 @@ gem "devise", "~> 4.7"
 gem "devise-jwt", "~> 0.11.0"
 gem "simple_command", "~> 1.0.1"
 
+gem "kaminari", "~> 1.2.2"
+
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
 

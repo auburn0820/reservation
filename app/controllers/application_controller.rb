@@ -14,7 +14,7 @@ class ApplicationController < ActionController::API
     render_json_response(code: 1000, message: 'Unauthorized', status: :unauthorized)
   end
 
-  def render_json_response(code:, message:, data: nil, status: :ok)
+  def render_json_response(code: 0, message: "", data: nil, status: :ok)
     render json: { code: code, message: message, data: data }, status: status
   end
 
