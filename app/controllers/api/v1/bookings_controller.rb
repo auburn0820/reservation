@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Api::V1::BookingsController < ApplicationController
-  before_action :set_reservation, only: [:show]
+  before_action :set_booking, only: [:show]
 
   def index
     if current_user.admin?
@@ -19,7 +19,7 @@ class Api::V1::BookingsController < ApplicationController
 
   private
 
-  def set_reservation
+  def set_booking
     @booking = Booking.find(params[:id])
   end
 end
