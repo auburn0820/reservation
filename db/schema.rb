@@ -10,12 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_04_28_033249) do
-  create_table "users", force: :cascade do |t|
-    t.string "email"
-    t.string "encrypted_password"
+ActiveRecord::Schema[7.1].define(version: 2024_04_28_045119) do
+  create_table "bookings", force: :cascade do |t|
+    t.string "booking_id", null: false
+    t.string "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["booking_id"], name: "index_bookings_on_booking_id", unique: true
+    t.index ["user_id"], name: "index_bookings_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "user_id", null: false
+    t.string "email"
+    t.string "encrypted_password"
+    t.integer "role", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_users_on_user_id", unique: true
   end
 
 end
