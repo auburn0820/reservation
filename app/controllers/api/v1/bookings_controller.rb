@@ -35,9 +35,6 @@ class Api::V1::BookingsController < ApplicationController
   end
 
   def destroy
-    puts ""
-
-
     if current_user.admin?
       cancel_booking
     elsif @booking.user_id == current_user.user_id
