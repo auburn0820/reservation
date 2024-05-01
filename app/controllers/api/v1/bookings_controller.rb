@@ -8,13 +8,15 @@ class Api::V1::BookingsController < ApplicationController
 
   def index
     @bookings = current_user.admin? ? Booking.all : Booking.where(user_id: current_user.user_id)
-    @bookings = @bookings.page(params[:page]).per(params[:per_page])
+    @bookings = @bookings.page(params[:page] || 1).per(params[:per_page] || 10).map do |booking|
+      delete_primary_key(booking)
+    end
 
     render_json_response(data: @bookings)
   end
 
   def show
-    render_json_response(data: @booking)
+    render_json_response(data: delete_primary_key(@booking))
   end
 
   def update
@@ -23,7 +25,7 @@ class Api::V1::BookingsController < ApplicationController
     end
 
     if @booking.change_exam(booking_params[:exam_id])
-      render_json_response(data: @booking)
+      render_json_response(data: delete_primary_key(@booking))
     else
       render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
     end
@@ -33,7 +35,7 @@ class Api::V1::BookingsController < ApplicationController
     @booking = Booking.build(booking_params.merge(user_id: current_user.user_id))
 
     if @booking.save
-      render_json_response(data: @booking)
+      render_json_response(data: delete_primary_key(@booking))
     else
       render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
     end
@@ -41,7 +43,7 @@ class Api::V1::BookingsController < ApplicationController
 
   def destroy
     if @booking.cancel
-      render_json_response(data: @booking)
+      render_json_response(data: delete_primary_key(@booking))
     else
       render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
     end
@@ -51,13 +53,20 @@ class Api::V1::BookingsController < ApplicationController
     return render_json_response(message: 'Only admin can confirm bookings.', status: 401) unless current_user.admin?
 
     if @booking.confirm
-      render_json_response(data: @booking)
+      render_json_response(data: delete_primary_key(@booking))
     else
       render_json_response(message: 'Unable to confirm booking.', status: 422)
     end
   end
 
   private
+
+  def delete_primary_key(booking)
+    booking_json = booking.as_json.deep_transform_keys { |key| key.to_sym }
+    booking_json[:id] = booking_json[:booking_id]
+    booking_json.delete(:booking_id)
+    booking_json
+  end
 
   def set_booking
     @booking = Booking.find_by(booking_id: params[:id], user_id: current_user.user_id)

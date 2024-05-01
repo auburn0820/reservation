@@ -5,8 +5,10 @@ class Api::V1::ExamsController < ApplicationController
 
   def index
     @exams = Exam.all.page(params[:page] || 1).per(params[:per_page] || 10).map do |exam|
-      exam_json = exam.as_json
+      exam_json = exam.as_json.as_json.deep_transform_keys { |key| key.to_sym }
       exam_json[:count] = Booking.where(exam_id: exam.exam_id, status: Booking::Status::CONFIRMED).count
+      exam_json[:id] = exam_json[:exam_id]
+      exam_json.delete(:exam_id)
       exam_json
     end
 
@@ -17,7 +19,7 @@ class Api::V1::ExamsController < ApplicationController
     @exam = Exam.new(exam_params)
 
     if @exam.save
-      render_json_response(data: @exam)
+      render_json_response(data: delete_primary_key(@exam))
     else
       render_json_response(message: @exam.errors.full_messages.join(', '), status: 422)
     end
@@ -27,7 +29,7 @@ class Api::V1::ExamsController < ApplicationController
     @exam = Exam.find(params[:id])
 
     if @exam.update(exam_params)
-      render_json_response(data: @exam)
+      render_json_response(data: delete_primary_key(@exam))
     else
       render_json_response(message: @exam.errors.full_messages.join(', '), status: 422)
     end
@@ -37,10 +39,17 @@ class Api::V1::ExamsController < ApplicationController
     @exam = Exam.find(params[:id])
     @exam.destroy
 
-    render_json_response(data: @exam)
+    render_json_response(data: delete_primary_key(@exam))
   end
 
   private
+
+  def delete_primary_key(exam)
+    exam_json = exam.as_json.deep_transform_keys { |key| key.to_sym }
+    exam_json[:id] = exam_json[:exam_id]
+    exam_json.delete(:exam_id)
+    exam_json
+  end
 
   def check_admin
     render_json_response(message: "Only admin can operate this.", status: 401) unless current_user.admin?
