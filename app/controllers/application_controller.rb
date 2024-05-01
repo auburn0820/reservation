@@ -6,7 +6,9 @@ class ApplicationController < ActionController::API
   private
 
   def authenticate_request
-    @current_user = AuthorizeApiRequest.call(request.headers)
+    command = AuthorizeApiRequest.call(request.headers)
+    @current_user = command.result
+
     unauthorized_response unless @current_user
   end
 
