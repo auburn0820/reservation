@@ -1,180 +1,199 @@
 require 'rails_helper'
 
 RSpec.describe Api::V1::BookingsController, type: :controller do
-  let(:user) { FactoryBot.create(:user, role: :customer) }
-  let(:admin) { FactoryBot.create(:user, role: :admin) }
-  let(:exam) { FactoryBot.create(:exam) }
+  let(:user) { create(:user) }
+  let(:admin_user) { create(:user, :admin) }
+  let(:exam) { create(:exam) }
+  let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id) }
 
   before do
-    allow(AuthorizeApiRequest).to receive(:call).and_return(user)
-    allow(controller).to receive(:current_user).and_return(user)
+    allow(AuthorizeApiRequest).to receive(:call).and_return(double(result: user))
   end
 
-  describe '#index' do
-    context '사용자가 관리자일 때' do
-      let!(:bookings) { create_list(:booking, 10, user_id: admin.user_id, exam_id: exam.exam_id) }
-
-      before do
-        allow(controller).to receive(:current_user).and_return(admin)
-        get :index
-      end
-
-      it '@bookings에 모든 예약이 할당됨' do
-        expect(assigns(:bookings)).to eq(bookings)
-      end
-
-      it '성공 응답 반환' do
-        expect(response).to be_successful
-      end
-    end
-
-    context '사용자가 관리자가 아닐 때' do
-      let!(:bookings) { create_list(:booking, 10, user_id: user.user_id, exam_id: exam.exam_id) }
-
-      before do
-        get :index
-      end
-
-      it '@bookings에 현재 사용자의 예약만 할당됨' do
-        expect(assigns(:bookings)).to eq(bookings)
-      end
-
-      it '성공 응답 반환' do
-        expect(response).to be_successful
-      end
-    end
-  end
-
-  describe '#show' do
-    let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id) }
+  describe 'GET #index' do
+    subject { get :index }
 
     before do
-      get :show, params: { id: booking.booking_id }
+      booking
     end
 
-    it '요청된 예약을 @booking에 할당함' do
-      expect(assigns(:booking)).to eq(booking)
+    it 'returns 200 status' do
+      subject
+      expect(response).to have_http_status(200)
     end
 
-    it '성공 응답 반환' do
-      expect(response).to be_successful
-    end
-  end
-
-  describe '#create' do
-    context '예약할 수 있는 상황이면' do
-
-      before do
-        allow(controller).to receive(:can_book_exam?).and_return(true)
-        post :create, params: { booking: { exam_id: exam.exam_id } }
-      end
-
-      it '새로운 예약을 생성함' do
-        expect(Booking.where(user_id: user.user_id).size).to eq(1)
-      end
-
-      it '새롭게 생성된 예약을 @booking에 할당함' do
-        expect(assigns(:booking)).to eq(Booking.first)
-      end
-
-      it '성공적인 응답을 반환함' do
-        expect(response).to be_successful
-      end
-    end
-
-    context '예약을 할 수 없는 상황이면' do
-      before do
-        allow(controller).to receive(:can_book_exam?).and_return(false)
-        post :create, params: { booking: { exam_id: exam.exam_id } }
-      end
-
-      it '새로운 예약은 생성하지 않음' do
-        expect(Booking.where(user_id: user.user_id).size).to eq(0)
-      end
-
-      it '오류 응답 반환' do
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
+    it 'returns correct booking' do
+      subject
+      json_response = JSON.parse(response.body)
+      expect(json_response['data'].size).to eq(1)
+      expect(json_response['data'][0]['booking_id']).to eq(booking.booking_id)
     end
   end
 
-  describe '#confirm' do
-    let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id) }
+  describe 'POST #create' do
+    subject { post :create, params: { booking: { exam_id: exam.exam_id } } }
 
-    context '사용자가 관리자일 때' do
-      before do
-        allow(controller).to receive(:current_user).and_return(admin)
-        put :confirm, params: { id: booking.booking_id }
-      end
+    context 'when eaxam is more than 3 days away' do
+      let(:exam) { create(:exam, started_at: Time.current + 4.days) }
 
-      it '예약을 확정한다' do
-        expect(booking.reload.status).to eq("confirmed")
-      end
-
-      it '성공 응답 반환' do
-        expect(response).to have_http_status(:success)
+      it 'returns 200 status' do
+        subject
+        expect(response).to have_http_status(200)
       end
     end
 
-    context '사용자가 관리자가 아닐 때' do
+    context 'when exam is less than 3 days away' do
+      let(:exam) { create(:exam, started_at: Time.current + 1.days) }
+
+      it 'returns 422 status' do
+        subject
+        expect(response).to have_http_status(422)
+      end
+    end
+
+    context 'when exam is already booked' do
+      let(:booking) { create(:exam, user_id: user.user_id) }
+
+      it 'returns 422 status' do
+        subject
+        expect(response).to have_http_status(422)
+      end
+    end
+
+    context 'when exam is no spots' do
       before do
-        allow(controller).to receive(:current_user).and_return(user)
-        put :confirm, params: { id: booking.booking_id }
+        allow(Booking).to receive(:can_reserve_seat?).and_return(false)
       end
 
-      it '예약 확정을 할 수 없다' do
-        expect(booking.reload.status).to eq("pending")
-      end
-
-      it '권한 없음 상태를 반환' do
-        expect(response).to have_http_status(:unauthorized)
+      it 'returns 422 status' do
+        subject
+        expect(response).to have_http_status(422)
       end
     end
   end
 
-  describe '#destroy' do
-    context '사용자가 관리자일 때' do
-      let(:booking) { create(:booking, user_id: admin.user_id, exam_id: exam.exam_id, status: "confirmed") }
+  describe 'DELETE #destroy' do
+    subject { delete :destroy, params: { id: booking.booking_id } }
 
+    context 'when the booking can be canceled' do
       before do
-        allow(controller).to receive(:current_user).and_return(admin)
+        allow(booking).to receive(:cancel).and_return(true)
       end
 
-      it '예약을 취소한다' do
-        delete :destroy, params: { id: booking.booking_id }
-        booking.reload
-        expect(booking.status).to eq('canceled')
+      it 'destroys the booking' do
+        expect { subject }.to change(Booking, :count).by(0)
+      end
+
+      it 'returns a success response' do
+        subject
         expect(response).to have_http_status(:ok)
       end
     end
 
-    context '예약을 한 사용자일 때' do
+    context 'when the user is not authorized to cancel the booking' do
       before do
-        allow(controller).to receive(:current_user).and_return(user)
+        allow_any_instance_of(Api::V1::BookingsController).to receive(:authorized_to_cancel?).and_return(false)
       end
 
-      context '확정이 되지 않은 예약일 때' do
-        let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id, status: "pending") }
-        it '취소할 수 있다' do
-          delete :destroy, params: { id: booking.booking_id }
-          booking.reload
-          expect(booking.status).to eq('canceled')
-          expect(response).to have_http_status(:ok)
-        end
+      it 'does not destroy the booking' do
+        expect { subject }.to_not change { booking.reload.status }
       end
 
-      context '확정된 예약일 때' do
-        let(:booking) { create(:booking, user_id: user.user_id, exam_id: exam.exam_id, status: "confirmed") }
-        before do
-          booking.update(status: 'confirmed')
-        end
+      it 'returns an unauthorized response' do
+        subject
+        expect(response).to have_http_status(401)
+      end
+    end
+  end
 
-        it '취소할 수 없다' do
-          delete :destroy, params: { id: booking.booking_id }
-          booking.reload
-          expect(booking.status).to eq('confirmed')
-          expect(response).to have_http_status(:bad_request)
-        end
+  describe 'GET #show' do
+    before do
+      booking
+    end
+
+    subject { get :show, params: { id: booking.booking_id } }
+
+    it 'returns http success' do
+      subject
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns the expected booking' do
+      subject
+      expect(JSON.parse(response.body)['data']).to eq(booking.as_json)
+    end
+
+    context 'when another user request not his booking' do
+      before do
+        booking.update(user_id: SecureRandom.uuid)
+      end
+
+      it 'returns 404 status' do
+        subject
+        expect(response).to have_http_status(404)
+      end
+    end
+  end
+
+  describe 'POST #confirm' do
+    before do
+      booking
+    end
+
+    subject { post :confirm, params: { id: booking.booking_id } }
+
+    context 'when admin user confirm booking' do
+      before do
+        user.update(role: User::Role::ADMIN)
+      end
+      it 'returns http success' do
+        subject
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+    context 'when customer user confirm booking' do
+      before do
+        user.update(role: User::Role::CUSTOMER)
+      end
+      it 'returns http 401' do
+        subject
+        expect(response).to have_http_status(401)
+      end
+    end
+  end
+
+  describe 'PUT #update' do
+    before do
+      exam
+      booking.update(exam_id: SecureRandom.uuid)
+    end
+
+    subject { put :update, params: { id: booking.booking_id, booking: { exam_id: exam.exam_id } } }
+
+    context 'when exam exists' do
+      it 'returns http success' do
+        subject
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'change exam_id of booking' do
+        expect { subject }.to change { booking.reload.exam_id }
+      end
+    end
+
+    context 'when exam does not exists' do
+      before do
+        exam.destroy
+      end
+
+      it 'returns http 404' do
+        subject
+        expect(response).to have_http_status(404)
+      end
+
+      it 'does not change exam_id of booking' do
+        expect { subject }.not_to change { booking.reload.exam_id }
       end
     end
   end
