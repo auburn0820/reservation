@@ -65,6 +65,6 @@ class Api::V1::ExamsController < ApplicationController
   end
 
   def exam_params
-    params.require(:exam).permit(:exam_id, :name, :started_at, :ended_at)
+    params.require(:exam).permit(:name, :started_at, :ended_at)
   end
 end
