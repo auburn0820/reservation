@@ -8,7 +8,7 @@
 ## 설치하기
 1. 이 레포지토리를 복제합니다.
 ```shell
-git clone https://github.com/your-username/your-project.git
+git clone https://github.com/auburn0820/reservation.git
 ```
 2. 프로젝트 디렉터리로 이동합니다.
 ```shell
