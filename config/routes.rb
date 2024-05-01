@@ -14,6 +14,8 @@ Rails.application.routes.draw do
       resources :bookings, only: [:index, :show, :create, :destroy, :update] do
         post 'confirm', to: 'bookings#confirm', on: :member
       end
+
+      resources :exams, only: [:index]
     end
   end
 end
