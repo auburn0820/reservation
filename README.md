@@ -5,6 +5,12 @@
 이 프로젝트를 실행하기 위해 다음과 같은 요구사항이 필요합니다.
 - Docker
 - Docker Compose
+
+컨테이너가 아닌 환경에서 실행할 경우 아래 사항이 추가적으로 필요합니다.
+- Ruby 3.3.0
+- Rails 7.1.3
+- PostgreSQL
+- SQLite (테스트 코드 실행을 위해 필요)
 ## 설치하기
 1. 이 레포지토리를 복제합니다.
 ```shell
@@ -25,3 +31,8 @@ docker-compose up
 ```shell
 bundle exec rspec
 ```
+## 기타
+- `master.key` 파일은 레포지토리에 절대 업로드하면 안 되나, 로컬 실행을 위해 업로드하였습니다.
+- 테이블 스키마 세팅을 위해 `docker-compose up` 명령어를 실행하면 `rails db:migrate`를 통해 테이블을 생성합니다.
+- 데이터 초기화를 위해 `docker-compose up` 명령어를 실행하면 `db/seeds.rb`를 실행하여 초기 데이터를 생성합니다.
+- 테스트 코드는 빠른 실행을 위해 데이터베이스를 `SQLite3`로 실행합니다.
