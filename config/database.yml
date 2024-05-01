@@ -21,7 +21,11 @@ default: &default
 
 development:
   <<: *default
-  database: reservation_development
+  database: postgres
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5432
 
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
@@ -80,6 +84,8 @@ test:
 #
 production:
   <<: *default
-  database: reservation_production
-  username: reservation
-  password: <%= ENV["RESERVATION_DATABASE_PASSWORD"] %>
+  database: postgres
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5432
