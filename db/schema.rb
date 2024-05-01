@@ -29,6 +29,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_04_28_073138) do
   create_table "exams", force: :cascade do |t|
     t.string "exam_id", null: false
     t.string "name", null: false
+    t.string "status", default: "activated", null: false
     t.datetime "started_at", null: false
     t.datetime "ended_at", null: false
     t.datetime "created_at", null: false

@@ -5,6 +5,7 @@ FactoryBot.define do
     sequence(:name) { |n| "Exam #{n}" }
     started_at { Time.current }
     ended_at { Time.current + 1.hours }
+    status { Exam::Status::ACTIVATED }
     # other attributes...
   end
 end

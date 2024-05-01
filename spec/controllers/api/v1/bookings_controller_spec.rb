@@ -26,7 +26,7 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
       subject
       json_response = JSON.parse(response.body)
       expect(json_response['data'].size).to eq(1)
-      expect(json_response['data'][0]['booking_id']).to eq(booking.booking_id)
+      expect(json_response['data'][0]['id']).to eq(booking.booking_id)
     end
   end
 
@@ -135,7 +135,10 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
 
     it 'returns the expected booking' do
       subject
-      expect(JSON.parse(response.body)['data']).to eq(booking.as_json)
+      expect(JSON.parse(response.body)['data']).to eq(booking.as_json.then do |booking|
+        booking['id'] = booking.delete('booking_id')
+        booking
+      end)
     end
 
     context 'when another user request not his booking' do
