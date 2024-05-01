@@ -8,4 +8,8 @@ class Exam < ApplicationRecord
   def can_apply_on_date?
     3.days.from_now < self.started_at.to_time
   end
+
+  def is_already_ended?
+    self.ended_at.to_time < Time.current
+  end
 end
