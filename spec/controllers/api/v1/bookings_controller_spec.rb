@@ -70,6 +70,21 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
         expect(response).to have_http_status(422)
       end
     end
+
+    context 'when exam is already end' do
+      before do
+        exam.update(started_at: Time.current - 1.days, ended_at: Time.current - 1.days + 1.hours)
+      end
+
+      it 'returns 422 status' do
+        subject
+        expect(response).to have_http_status(422)
+      end
+
+      it 'not create booking' do
+        expect { subject }.not_to change(Booking, :count)
+      end
+    end
   end
 
   describe 'DELETE #destroy' do

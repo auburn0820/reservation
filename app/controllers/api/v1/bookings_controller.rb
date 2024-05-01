@@ -75,6 +75,7 @@ class Api::V1::BookingsController < ApplicationController
 
   def check_exam_availability
     return render_json_response(message: "Already book the exam.", status: 422) if Booking.is_already_booked?(user_id: current_user.user_id, exam_id: booking_params[:exam_id])
+    return render_json_response(message: "Already ended exam.", status: 422) if Exam.find_by(exam_id: booking_params[:exam_id]).is_already_ended?
     return render_json_response(message: "Booking must be made at least 3 days in advance.", status: 422) unless Exam.find_by(exam_id: booking_params[:exam_id]).can_apply_on_date?
     return render_json_response(message: "All spots are booked for this time slot.", status: 422) unless Booking.can_reserve_seat?(booking_params[:exam_id])
   end
