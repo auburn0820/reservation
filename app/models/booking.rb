@@ -1,14 +1,20 @@
 class Booking < ApplicationRecord
   before_create :set_booking_id, :set_status
 
-  enum status: { pending: "pending", confirmed: "confirmed", canceled: "canceled" }
+  module Status
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    CANCELED = "canceled"
+  end.freeze
+
+  enum status: { pending: Status::PENDING, confirmed: Status::CONFIRMED, canceled: Status::CANCELED }
 
   def confirm
-    self.update_attribute(:status, "confirmed")
+    self.update_attribute(:status, Status::CONFIRMED)
   end
 
   def cancel
-    self.update_attribute(:status, "canceled")
+    self.update_attribute(:status, Status::CANCELED)
   end
 
   def set_booking_id
@@ -16,6 +22,6 @@ class Booking < ApplicationRecord
   end
 
   def set_status
-    self.status = "pending"
+    self.status = Status::PENDING
   end
 end
