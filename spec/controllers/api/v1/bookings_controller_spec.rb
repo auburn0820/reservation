@@ -211,5 +211,20 @@ RSpec.describe Api::V1::BookingsController, type: :controller do
         expect { subject }.not_to change { booking.reload.exam_id }
       end
     end
+
+    context 'when booking is already confirmed' do
+      before do
+        booking.update(status: Booking::Status::CONFIRMED)
+      end
+
+      it 'returns http 422' do
+        subject
+        expect(response).to have_http_status(422)
+      end
+
+      it 'does not change booking' do
+        expect { subject }.not_to change { booking.reload.exam_id }
+      end
+    end
   end
 end

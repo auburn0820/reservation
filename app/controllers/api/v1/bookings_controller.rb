@@ -4,6 +4,7 @@ class Api::V1::BookingsController < ApplicationController
   before_action :set_booking, only: [:show, :destroy, :confirm, :update]
   before_action :check_exam_availability, only: [:create]
   before_action :check_cancel_exam_availability, only: [:destroy]
+  before_action :check_update_booking_availability, only: [:update]
 
   def index
     @bookings = current_user.admin? ? Booking.all : Booking.where(user_id: current_user.user_id)
@@ -61,6 +62,10 @@ class Api::V1::BookingsController < ApplicationController
   def set_booking
     @booking = Booking.find_by(booking_id: params[:id], user_id: current_user.user_id)
     render_json_response(message: 'Booking not found.', status: 404) unless @booking
+  end
+
+  def check_update_booking_availability
+    return render_json_response(message: "Already confirmed.", status: 422) unless @booking.is_updatable_status?
   end
 
   def authorized_to_cancel?

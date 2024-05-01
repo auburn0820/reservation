@@ -29,6 +29,10 @@ class Booking < ApplicationRecord
     self.status != Booking::Status::CONFIRMED
   end
 
+  def is_updatable_status?
+    self.status != Booking::Status::CONFIRMED
+  end
+
   def set_status
     self.status = Status::PENDING
   end
