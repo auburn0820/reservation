@@ -27,8 +27,6 @@ class ApplicationController < ActionController::API
   end
 
   def handle_error(e)
-    puts e.class == DefaultError
-
     case (e)
     when DefaultError
       logging_default_error(e)
