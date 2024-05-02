@@ -37,7 +37,7 @@ class Api::V1::BookingsController < ApplicationController
     if @booking.save
       render_json_response(data: delete_primary_key(@booking))
     else
-      render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
+      raise DefaultError.new(message: @booking.errors.full_messages.join(', '), http_status: 422)
     end
   end
 
@@ -45,17 +45,17 @@ class Api::V1::BookingsController < ApplicationController
     if @booking.cancel
       render_json_response(data: delete_primary_key(@booking))
     else
-      render_json_response(message: @booking.errors.full_messages.join(', '), status: 422)
+      raise DefaultError.new(message: @booking.errors.full_messages.join(', '), http_status: 422)
     end
   end
 
   def confirm
-    return render_json_response(message: 'Only admin can confirm bookings.', status: 401) unless current_user.admin?
+    raise DefaultError.new(message: 'Only admin can confirm bookings.', http_status: 401) unless current_user.admin?
 
     if @booking.confirm
       render_json_response(data: delete_primary_key(@booking))
     else
-      render_json_response(message: 'Unable to confirm booking.', status: 422)
+      raise DefaultError.new(message: 'Unable to confirm booking.', http_status: 422)
     end
   end
 
@@ -70,11 +70,11 @@ class Api::V1::BookingsController < ApplicationController
 
   def set_booking
     @booking = Booking.find_by(booking_id: params[:id], user_id: current_user.user_id)
-    render_json_response(message: 'Booking not found.', status: 404) unless @booking
+    raise DefaultError.new(message: 'Booking not found.', http_status: 404) unless @booking
   end
 
   def check_update_booking_availability
-    return render_json_response(message: "Already confirmed.", status: 422) unless @booking.is_updatable_status?
+    raise DefaultError.new(message: "Already confirmed.", http_status: 422) unless @booking.is_updatable_status?
   end
 
   def authorized_to_cancel?
@@ -82,16 +82,16 @@ class Api::V1::BookingsController < ApplicationController
   end
 
   def check_cancel_exam_availability
-    return render_json_response(message: "Only the person who made the booking can cancel it.", status: 401) unless authorized_to_cancel?
-    return render_json_response(message: "Already canceled.", status: 400) if @booking.is_canceled?
-    return render_json_response(message: "You can only cancel a booking before it is confirmed.", status: 400) unless @booking.is_cancelable_status?
+    raise DefaultError.new(message: "Only the person who made the booking can cancel it.", http_status: 401) unless authorized_to_cancel?
+    raise DefaultError.new(message: "Already canceled.", http_status: 400) if @booking.is_canceled?
+    raise DefaultError.new(message: "You can only cancel a booking before it is confirmed.", http_status: 400) unless @booking.is_cancelable_status?
   end
 
   def check_exam_availability
-    return render_json_response(message: "Already book the exam.", status: 422) if Booking.is_already_booked?(user_id: current_user.user_id, exam_id: booking_params[:exam_id])
-    return render_json_response(message: "Already ended exam.", status: 422) if Exam.find_by(exam_id: booking_params[:exam_id]).is_already_ended?
-    return render_json_response(message: "Booking must be made at least 3 days in advance.", status: 422) unless Exam.find_by(exam_id: booking_params[:exam_id]).can_apply_on_date?
-    return render_json_response(message: "All spots are booked for this time slot.", status: 422) unless Booking.can_reserve_seat?(booking_params[:exam_id])
+    raise DefaultError.new(message: "Already book the exam.", http_status: 422) if Booking.is_already_booked?(user_id: current_user.user_id, exam_id: booking_params[:exam_id])
+    raise DefaultError.new(message: "Already ended exam.", http_status: 422) if Exam.find_by(exam_id: booking_params[:exam_id]).is_already_ended?
+    raise DefaultError.new(message: "Booking must be made at least 3 days in advance.", http_status: 422) unless Exam.find_by(exam_id: booking_params[:exam_id]).can_apply_on_date?
+    raise DefaultError.new(message: "All spots are booked for this time slot.", http_status: 422) unless Booking.can_reserve_seat?(booking_params[:exam_id])
   end
 
   def booking_params

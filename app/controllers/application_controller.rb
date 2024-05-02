@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::API
   before_action :authenticate_request
   attr_reader :current_user
+
   rescue_from StandardError, with: :handle_error
 
   private
@@ -20,9 +21,37 @@ class ApplicationController < ActionController::API
     render json: { code: code, message: message, data: data }, status: status
   end
 
+  def handle_default_error(e)
+    logging_default_error(e)
+    render json: { code: e.code, message: e.message, data: nil }, status: e.http_status
+  end
+
   def handle_error(e)
-    status = :bad_request
-    render json: { code: Rack::Utils::SYMBOL_TO_STATUS_CODE[status], message: e.message, data: nil }, status: status
+    puts e.class == DefaultError
+
+    case (e)
+    when DefaultError
+      logging_default_error(e)
+      render json: { code: e.code, message: e.message, data: nil }, status: e.http_status
+    else
+      status = :internal_server_error
+      render json: { code: Rack::Utils::SYMBOL_TO_STATUS_CODE[status], message: e.message, data: nil }, status: status
+    end
+  end
+
+  def logging_default_error(e)
+    case (e.level)
+    when DefaultError::ERROR_LEVEL::DEBUG
+      Rails.logger.debug(e.message)
+    when DefaultError::ERROR_LEVEL::INFO
+      Rails.logger.debug(e.message)
+    when DefaultError::ERROR_LEVEL::WARN
+      Rails.logger.debug(e.message)
+    when DefaultError::ERROR_LEVEL::ERROR
+      Rails.logger.debug(e.message)
+    else
+      Rails.logger.error(e.message)
+    end
   end
 
   def set_error_response(e)

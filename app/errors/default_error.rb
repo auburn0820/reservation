@@ -1,9 +1,18 @@
 # frozen_string_literal: true
 class DefaultError < StandardError
-  attr_reader :error_status
+  attr_reader :code, :http_status, :level
 
-  def initialize(message:, error_status: :internal_server_error)
+  module ERROR_LEVEL
+    DEBUG = 0
+    INFO = 1
+    WARN = 2
+    ERROR = 3
+  end.freeze
+
+  def initialize(code: 1_000, message:, http_status: :internal_server_error, level: ERROR_LEVEL::WARN)
     super(message)
-    @error_status = error_status
+    @code = code
+    @http_status = http_status
+    @level = level
   end
 end

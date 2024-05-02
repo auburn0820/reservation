@@ -26,7 +26,7 @@ class Api::V1::ExamsController < ApplicationController
     if @exam.save
       render_json_response(data: delete_primary_key(@exam))
     else
-      render_json_response(message: @exam.errors.full_messages.join(', '), status: 422)
+      raise DefaultError.new(message: @exam.errors.full_messages.join(', '), http_status: 422)
     end
   end
 
@@ -34,7 +34,7 @@ class Api::V1::ExamsController < ApplicationController
     if @exam.update(exam_params)
       render_json_response(data: delete_primary_key(@exam))
     else
-      render_json_response(message: @exam.errors.full_messages.join(', '), status: 422)
+      raise DefaultError.new(message: @exam.errors.full_messages.join(', '), http_status: 422)
     end
   end
 
@@ -42,7 +42,7 @@ class Api::V1::ExamsController < ApplicationController
     if @exam.set_delete
       render_json_response(data: delete_primary_key(@exam))
     else
-      render_json_response(message: @exam.errors.full_messages.join(', '), status: 422)
+      raise DefaultError.new(message: @exam.errors.full_messages.join(', '), http_status: 422)
     end
   end
 
@@ -50,7 +50,7 @@ class Api::V1::ExamsController < ApplicationController
 
   def set_exam
     @exam = Exam.find_by(exam_id: params[:id], status: Exam::Status::ACTIVATED)
-    render_json_response(message: 'Exam not found.', status: 404) unless @exam
+    raise DefaultError.new(message: 'Exam not found.', http_status: 404) unless @exam
   end
 
   def delete_primary_key(exam)
@@ -61,7 +61,7 @@ class Api::V1::ExamsController < ApplicationController
   end
 
   def check_admin
-    render_json_response(message: "Only admin can operate this.", status: 401) unless current_user.admin?
+    raise DefaultError.new(message: "Only admin can operate this.", http_status: 401) unless current_user.admin?
   end
 
   def exam_params
